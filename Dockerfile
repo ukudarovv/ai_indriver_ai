@@ -37,5 +37,5 @@ ENV DJANGO_SETTINGS_MODULE=car_analysis_project.settings
 # Открываем порт
 EXPOSE 8000
 
-# Команда запуска
+# Команда запуска (слушаем на всех интерфейсах)
 CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]

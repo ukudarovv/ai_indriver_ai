@@ -260,18 +260,19 @@ def api_simple_status(request):
             gemini_results = car_analysis_service.gemini_analyzer.analyze(temp_path)
             processing_time = time.time() - start_time
             
-            # Формируем простой ответ
+            # Формируем детальный ответ как на веб-странице
             integrity = gemini_results.get('integrity', {})
             cleanliness = gemini_results.get('cleanliness', {})
             damage_details = gemini_results.get('damage_details', {})
+            environment = gemini_results.get('environment', {})
             
             # Определяем общий статус
             if integrity.get('label') == 'damaged':
                 status = "damaged"
-                status_text = "Автомобиль поврежден"
+                status_text = "Поврежден"
             else:
                 status = "good"
-                status_text = "Автомобиль в хорошем состоянии"
+                status_text = "В хорошем состоянии"
             
             # Считаем количество повреждений
             damage_count = len(damage_details.get('parts', []))
@@ -285,15 +286,138 @@ def api_simple_status(request):
             else:
                 cleanliness_text = "грязный"
             
-            # Формируем простой ответ
+            # Формируем текстовый ответ как на веб-странице
+            text_response = f"""🚗 АНАЛИЗ АВТОМОБИЛЯ
+
+📊 ОБЩЕЕ СОСТОЯНИЕ:
+• Целостность: {status_text} ({round(integrity.get('confidence', 0) * 100, 1)}%)
+• Чистота: {cleanliness_text} ({round(cleanliness.get('confidence', 0) * 100, 1)}%)
+
+🔍 ДЕТАЛИ ПОВРЕЖДЕНИЙ:
+• Найдено повреждений: {damage_count}
+• Общая уверенность: {round(damage_details.get('overall_confidence', 0) * 100, 1)}%"""
+
+            # Добавляем детали каждого повреждения
+            if damage_count > 0:
+                text_response += "\n\n📋 СПИСОК ПОВРЕЖДЕНИЙ:"
+                for i, part in enumerate(damage_details.get('parts', []), 1):
+                    part_name = part.get('part', 'Неизвестная часть')
+                    damage_type = part.get('type', 'Неизвестный тип')
+                    confidence = round(part.get('confidence', 0) * 100, 1)
+                    other_desc = part.get('other_desc', '')
+                    
+                    # Переводим названия частей на русский
+                    part_translations = {
+                        'hood': 'Капот',
+                        'bumper_front': 'Передний бампер',
+                        'bumper_rear': 'Задний бампер',
+                        'fender_left': 'Левое крыло',
+                        'fender_right': 'Правое крыло',
+                        'door_left_front': 'Левая передняя дверь',
+                        'door_left_rear': 'Левая задняя дверь',
+                        'door_right_front': 'Правая передняя дверь',
+                        'door_right_rear': 'Правая задняя дверь',
+                        'trunk': 'Багажник',
+                        'headlight_left': 'Левая фара',
+                        'headlight_right': 'Правая фара',
+                        'taillight_left': 'Левый задний фонарь',
+                        'taillight_right': 'Правый задний фонарь',
+                        'mirror_left': 'Левое зеркало',
+                        'mirror_right': 'Правое зеркало',
+                        'windshield': 'Лобовое стекло',
+                        'side_window_left': 'Левое боковое стекло',
+                        'side_window_right': 'Правое боковое стекло',
+                        'wheel_left_front': 'Левое переднее колесо',
+                        'wheel_right_front': 'Правое переднее колесо',
+                        'wheel_left_rear': 'Левое заднее колесо',
+                        'wheel_right_rear': 'Правое заднее колесо',
+                        'roof': 'Крыша',
+                        'sill_left': 'Левый порог',
+                        'sill_right': 'Правый порог'
+                    }
+                    
+                    # Переводим типы повреждений
+                    type_translations = {
+                        'scratch': 'Царапина',
+                        'dent': 'Вмятина',
+                        'crack': 'Трещина',
+                        'broken_glass': 'Разбитое стекло',
+                        'paint_peel': 'Отслоение краски',
+                        'rust': 'Ржавчина',
+                        'misalignment': 'Перекос',
+                        'missing_part': 'Отсутствующая деталь',
+                        'other': 'Другое'
+                    }
+                    
+                    part_ru = part_translations.get(part_name, part_name)
+                    type_ru = type_translations.get(damage_type, damage_type)
+                    
+                    if other_desc and damage_type == 'other':
+                        type_ru = f"{type_ru} ({other_desc})"
+                    
+                    text_response += f"\n{i}. {part_ru}: {type_ru} ({confidence}%)"
+            else:
+                text_response += "\n\n✅ Повреждений не обнаружено"
+
+            # Добавляем условия съемки
+            weather = environment.get('weather', 'unknown')
+            lighting = environment.get('lighting', 'unknown')
+            glare_pct = round(environment.get('glare_coverage_pct', 0) * 100, 1)
+            humidity_pct = round(environment.get('wetness_pct', 0) * 100, 1)
+            
+            weather_translations = {
+                'sunny': 'Солнечно',
+                'cloudy': 'Облачно',
+                'rain': 'Дождь',
+                'snow': 'Снег',
+                'fog': 'Туман',
+                'night': 'Ночь',
+                'indoor': 'В помещении',
+                'unknown': 'Неизвестно'
+            }
+            
+            lighting_translations = {
+                'normal': 'Нормальное',
+                'low_light': 'Слабое освещение',
+                'strong_glare': 'Сильные блики',
+                'backlight': 'Контровый свет',
+                'mixed': 'Смешанное',
+                'artificial': 'Искусственное',
+                'unknown': 'Неизвестно'
+            }
+            
+            weather_ru = weather_translations.get(weather, weather)
+            lighting_ru = lighting_translations.get(lighting, lighting)
+            
+            text_response += f"""
+
+🌤️ УСЛОВИЯ СЪЕМКИ:
+• Погода: {weather_ru}
+• Освещение: {lighting_ru}
+• Блики: {glare_pct}%
+• Влажность: {humidity_pct}%
+• Уверенность: {round(environment.get('confidence', 0) * 100, 1)}%
+
+⏱️ Время обработки: {round(processing_time, 2)}с"""
+
+            # Добавляем заметки если есть
+            notes = gemini_results.get('notes', '')
+            if notes:
+                text_response += f"\n\n📝 Заметки: {notes}"
+            
+            # Формируем JSON ответ с текстом
             response_data = {
                 'status': 'success',
-                'car_status': status,
-                'car_status_text': status_text,
-                'damage_count': damage_count,
-                'cleanliness': cleanliness_text,
-                'confidence': round(integrity.get('confidence', 0) * 100, 1),
-                'processing_time': round(processing_time, 2)
+                'model': 'gemini',
+                'processing_time': round(processing_time, 2),
+                'analysis_text': text_response,
+                'summary': {
+                    'integrity': status_text,
+                    'cleanliness': cleanliness_text,
+                    'damage_count': damage_count,
+                    'weather': weather_ru,
+                    'lighting': lighting_ru
+                }
             }
             
             return JsonResponse(response_data)

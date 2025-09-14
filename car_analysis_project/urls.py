@@ -21,7 +21,7 @@ from django.conf.urls.static import static
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('', include('car_detector.urls')),
+    path('app2/', include('car_detector.urls')),
 ]
 
 # Обслуживание медиа файлов в режиме разработки
