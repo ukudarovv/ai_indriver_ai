@@ -8,21 +8,21 @@ RUN apt-get update && apt-get install -y \
     libxext6 \
     libxrender-dev \
     libgomp1 \
-    libglib2.0-0 \
     libgtk-3-0 \
     libavcodec-dev \
     libavformat-dev \
     libswscale-dev \
+    curl \
     && rm -rf /var/lib/apt/lists/*
 
 # Создаем рабочую директорию
 WORKDIR /app
 
-# Копируем только requirements.txt сначала для кэширования слоев
-COPY requirements-minimal.txt .
+# Копируем requirements.txt для кэширования слоев
+COPY requirements.txt .
 
 # Устанавливаем зависимости с оптимизацией
-RUN pip install --no-cache-dir --prefer-binary -r requirements-minimal.txt
+RUN pip install --no-cache-dir --prefer-binary -r requirements.txt
 
 # Копируем код приложения
 COPY . .
