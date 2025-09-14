@@ -233,9 +233,12 @@ def api_gemini_analyze(request):
         
         return JsonResponse({
             'status': 'error',
-            'model': 'gemini',
+            'car_status': 'error',
+            'car_status_text': error_text,
+            'damage_count': 0,
+            'cleanliness': 'неизвестно',
+            'confidence': 0.0,
             'processing_time': 0.0,
-            'analysis_text': error_text,
             'error': str(e)
         }, status=500)
 
@@ -283,9 +286,12 @@ def api_simple_status(request):
                 
                 return JsonResponse({
                     'status': 'error',
-                    'model': 'gemini',
+                    'car_status': 'error',
+                    'car_status_text': error_text,
+                    'damage_count': 0,
+                    'cleanliness': 'неизвестно',
+                    'confidence': 0.0,
                     'processing_time': round(processing_time, 2),
-                    'analysis_text': error_text,
                     'error': gemini_results['error']
                 })
             
@@ -436,19 +442,15 @@ def api_simple_status(request):
             if notes:
                 text_response += f"\n\n📝 Заметки: {notes}"
             
-            # Формируем JSON ответ с текстом
+            # Формируем упрощенный JSON ответ
             response_data = {
                 'status': 'success',
-                'model': 'gemini',
-                'processing_time': round(processing_time, 2),
-                'analysis_text': text_response,
-                'summary': {
-                    'integrity': status_text,
-                    'cleanliness': cleanliness_text,
-                    'damage_count': damage_count,
-                    'weather': weather_ru,
-                    'lighting': lighting_ru
-                }
+                'car_status': status,
+                'car_status_text': text_response,
+                'damage_count': damage_count,
+                'cleanliness': cleanliness_text,
+                'confidence': round(integrity.get('confidence', 0) * 100, 1),
+                'processing_time': round(processing_time, 2)
             }
             
             return JsonResponse(response_data)
@@ -465,9 +467,12 @@ def api_simple_status(request):
             
             return JsonResponse({
                 'status': 'error',
-                'model': 'gemini',
+                'car_status': 'error',
+                'car_status_text': error_text,
+                'damage_count': 0,
+                'cleanliness': 'неизвестно',
+                'confidence': 0.0,
                 'processing_time': round(time.time() - start_time, 2),
-                'analysis_text': error_text,
                 'error': f'Analysis failed: {str(e)}'
             }, status=500)
         
@@ -486,8 +491,11 @@ def api_simple_status(request):
         
         return JsonResponse({
             'status': 'error',
-            'model': 'gemini',
+            'car_status': 'error',
+            'car_status_text': error_text,
+            'damage_count': 0,
+            'cleanliness': 'неизвестно',
+            'confidence': 0.0,
             'processing_time': 0.0,
-            'analysis_text': error_text,
             'error': str(e)
         }, status=500)
