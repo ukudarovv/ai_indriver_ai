@@ -134,3 +134,7 @@ processed_images/
 # Temporary files
 *.tmp
 *.temp
+
+# Docker
+.dockerignore
+docker-compose.override.yml

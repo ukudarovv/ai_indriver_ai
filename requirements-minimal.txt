@@ -1,0 +1,22 @@
+# Минимальные зависимости для Docker
+# Django
+django>=5.0.0
+
+# Gemini API
+google-generativeai>=0.8.0
+
+# Основные библиотеки
+numpy>=1.23.5
+pillow>=10.3.0
+requests>=2.32.0
+PyYAML>=5.3.1
+
+# OpenCV (легкая версия)
+opencv-python-headless>=4.8.0
+
+# YOLO (только необходимые компоненты)
+ultralytics>=8.2.34
+
+# Дополнительные утилиты
+tqdm>=4.64.0
+psutil

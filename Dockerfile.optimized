@@ -1,0 +1,56 @@
+# Многоэтапная сборка для экономии места
+FROM python:3.11-slim as builder
+
+# Устанавливаем системные зависимости для сборки
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    libglib2.0-0 \
+    libsm6 \
+    libxext6 \
+    libxrender-dev \
+    libgomp1 \
+    && rm -rf /var/lib/apt/lists/*
+
+# Создаем виртуальное окружение
+RUN python -m venv /opt/venv
+ENV PATH="/opt/venv/bin:$PATH"
+
+# Копируем и устанавливаем зависимости
+COPY requirements-minimal.txt .
+RUN pip install --no-cache-dir --prefer-binary -r requirements-minimal.txt
+
+# Финальный образ
+FROM python:3.11-slim
+
+# Копируем только необходимые системные библиотеки
+RUN apt-get update && apt-get install -y \
+    libglib2.0-0 \
+    libsm6 \
+    libxext6 \
+    libxrender-dev \
+    libgomp1 \
+    libgtk-3-0 \
+    && rm -rf /var/lib/apt/lists/*
+
+# Копируем виртуальное окружение из builder
+COPY --from=builder /opt/venv /opt/venv
+ENV PATH="/opt/venv/bin:$PATH"
+
+# Создаем рабочую директорию
+WORKDIR /app
+
+# Копируем код приложения
+COPY . .
+
+# Создаем директории
+RUN mkdir -p media processed_images static
+
+# Настраиваем переменные окружения
+ENV PYTHONUNBUFFERED=1
+ENV DJANGO_SETTINGS_MODULE=car_analysis_project.settings
+
+# Открываем порт
+EXPOSE 8000
+
+# Команда запуска
+CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]
