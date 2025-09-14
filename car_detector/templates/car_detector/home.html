@@ -1,0 +1,172 @@
+{% extends 'car_detector/base.html' %}
+
+{% block title %}Главная - Анализ автомобилей{% endblock %}
+
+{% block content %}
+<!-- Героическая секция -->
+<section class="hero-section">
+    <div class="container text-center">
+        <h1 class="display-4 mb-4">
+            <i class="fas fa-search"></i> Анализ автомобилей
+        </h1>
+        <p class="lead mb-4">
+            Загрузите фото автомобиля и получите детальный анализ с помощью AI
+        </p>
+        <div class="row justify-content-center">
+            <div class="col-md-8">
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">
+                            <i class="fas fa-upload"></i> Загрузить изображение
+                        </h5>
+                        <div class="d-grid gap-2">
+                            <a href="{% url 'dual_analysis' %}" class="btn btn-primary btn-lg">
+                                <i class="fas fa-brain"></i> + <i class="fas fa-eye"></i> Двойной анализ (Gemini + YOLO)
+                            </a>
+                            <div class="text-center">
+                                <small class="text-muted">Рекомендуется для полного анализа</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Возможности -->
+<section class="py-5">
+    <div class="container">
+        <h2 class="text-center mb-5">Возможности анализа</h2>
+        <div class="row">
+            <div class="col-md-4 mb-4">
+                <div class="card card-hover h-100">
+                    <div class="card-body text-center">
+                        <i class="fas fa-shield-alt fa-3x text-primary mb-3"></i>
+                        <h5 class="card-title">Оценка целостности</h5>
+                        <p class="card-text">
+                            Определение повреждений: вмятины, царапины, трещины, 
+                            разбитые фары и другие дефекты кузова
+                        </p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4 mb-4">
+                <div class="card card-hover h-100">
+                    <div class="card-body text-center">
+                        <i class="fas fa-spray-can fa-3x text-success mb-3"></i>
+                        <h5 class="card-title">Оценка чистоты</h5>
+                        <p class="card-text">
+                            Анализ степени загрязнения: чистый, слегка загрязненный 
+                            или сильно загрязненный
+                        </p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4 mb-4">
+                <div class="card card-hover h-100">
+                    <div class="card-body text-center">
+                        <i class="fas fa-cloud-sun fa-3x text-info mb-3"></i>
+                        <h5 class="card-title">Условия съемки</h5>
+                        <p class="card-text">
+                            Оценка погоды, освещения, бликов и влажности 
+                            для корректной интерпретации результатов
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Технологии -->
+<section class="py-5 bg-light">
+    <div class="container">
+        <h2 class="text-center mb-5">Используемые технологии</h2>
+        <div class="row">
+            <div class="col-md-6 mb-4">
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">
+                            <i class="fas fa-brain text-primary"></i> Google Gemini
+                        </h5>
+                        <p class="card-text">
+                            Интегрированная AI модель для детального анализа изображений автомобилей.
+                            Обеспечивает высокую точность в определении повреждений и условий съемки.
+                        </p>
+                        <ul class="list-unstyled">
+                            <li><i class="fas fa-check text-success"></i> Детальная классификация повреждений</li>
+                            <li><i class="fas fa-check text-success"></i> Оценка условий съемки</li>
+                            <li><i class="fas fa-check text-success"></i> Высокая точность анализа</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6 mb-4">
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">
+                            <i class="fas fa-eye text-warning"></i> YOLO Detection
+                        </h5>
+                        <p class="card-text">
+                            Обученная модель для обнаружения объектов на изображениях.
+                            Специализирована на выявлении повреждений автомобилей.
+                        </p>
+                        <ul class="list-unstyled">
+                            <li><i class="fas fa-check text-success"></i> Быстрое обнаружение объектов</li>
+                            <li><i class="fas fa-check text-success"></i> Координаты повреждений</li>
+                            <li><i class="fas fa-check text-success"></i> Уровень уверенности</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Последние анализы -->
+{% if recent_analyses %}
+<section class="py-5">
+    <div class="container">
+        <h2 class="text-center mb-5">Последние анализы</h2>
+        <div class="row">
+            {% for analysis in recent_analyses %}
+            <div class="col-md-4 mb-4">
+                <div class="card card-hover">
+                    <img src="{{ analysis.image.url }}" class="card-img-top" style="height: 200px; object-fit: cover;">
+                    <div class="card-body">
+                        <h6 class="card-title">
+                            Анализ #{{ analysis.id }}
+                        </h6>
+                        <p class="card-text">
+                            <span class="badge status-badge 
+                                {% if analysis.gemini_integrity_label == 'damaged' %}bg-danger
+                                {% else %}bg-success{% endif %}">
+                                {{ analysis.get_gemini_integrity_label_display }}
+                            </span>
+                            <span class="badge status-badge bg-secondary">
+                                {{ analysis.get_gemini_cleanliness_label_display }}
+                            </span>
+                        </p>
+                        <p class="card-text">
+                            <small class="text-muted">
+                                {{ analysis.created_at|date:"d.m.Y H:i" }}
+                            </small>
+                        </p>
+                        <a href="{% url 'analysis_detail' analysis.id %}" class="btn btn-outline-primary btn-sm">
+                            Подробнее
+                        </a>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        <div class="text-center">
+            <a href="{% url 'analysis_list' %}" class="btn btn-primary">
+                <i class="fas fa-list"></i> Все анализы
+            </a>
+        </div>
+    </div>
+</section>
+{% endif %}
+{% endblock %}

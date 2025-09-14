@@ -1,0 +1,191 @@
+{% extends 'car_detector/base.html' %}
+
+{% block title %}Двойной анализ - Gemini + YOLO{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <!-- Заголовок -->
+    <div class="row mb-4">
+        <div class="col-12 text-center">
+            <h1 class="display-4 mb-3">
+                <i class="fas fa-brain text-primary"></i> + 
+                <i class="fas fa-eye text-warning"></i> 
+                Двойной анализ
+            </h1>
+            <p class="lead text-muted">
+                Загрузите фото автомобиля и получите анализ от двух AI моделей одновременно
+            </p>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Форма загрузки -->
+        <div class="col-lg-6 mb-4">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <h5><i class="fas fa-upload"></i> Загрузка изображения</h5>
+                </div>
+                <div class="card-body">
+                    <form method="post" action="{% url 'upload_and_analyze' %}" enctype="multipart/form-data" id="uploadForm">
+                        {% csrf_token %}
+                        <div class="mb-3">
+                            <label for="image" class="form-label">Выберите изображение автомобиля</label>
+                            <input type="file" class="form-control" name="image" id="image" accept="image/*" required>
+                            <div class="form-text">
+                                Поддерживаются форматы: JPEG, PNG, WebP (максимум 10MB)
+                            </div>
+                        </div>
+                        
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-primary btn-lg" id="analyzeBtn">
+                                <i class="fas fa-magic"></i> Запустить анализ
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Предварительный просмотр -->
+            <div class="card mt-3" id="previewCard" style="display: none;">
+                <div class="card-header">
+                    <h6><i class="fas fa-image"></i> Предварительный просмотр</h6>
+                </div>
+                <div class="card-body p-0">
+                    <img id="previewImage" class="img-fluid" alt="Предварительный просмотр">
+                </div>
+            </div>
+        </div>
+
+        <!-- Информация о моделях -->
+        <div class="col-lg-6">
+            <div class="row">
+                <!-- Gemini -->
+                <div class="col-12 mb-4">
+                    <div class="card h-100">
+                        <div class="card-header bg-primary text-white">
+                            <h5><i class="fas fa-brain"></i> Google Gemini AI</h5>
+                        </div>
+                        <div class="card-body">
+                            <p class="card-text">
+                                <strong>Интегрированная модель</strong> для детального анализа автомобилей
+                            </p>
+                            <ul class="list-unstyled">
+                                <li><i class="fas fa-check text-success"></i> Оценка целостности (damaged/undamaged)</li>
+                                <li><i class="fas fa-check text-success"></i> Оценка чистоты (clean/slightly_dirty/dirty)</li>
+                                <li><i class="fas fa-check text-success"></i> Детали повреждений по частям кузова</li>
+                                <li><i class="fas fa-check text-success"></i> Анализ условий съемки</li>
+                                <li><i class="fas fa-check text-success"></i> Высокая точность анализа</li>
+                            </ul>
+                            <div class="mt-3">
+                                <span class="badge bg-success">Доступна</span>
+                                <span class="badge bg-info">Высокая точность</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- YOLO -->
+                <div class="col-12">
+                    <div class="card h-100">
+                        <div class="card-header bg-warning text-dark">
+                            <h5><i class="fas fa-eye"></i> YOLO Detection</h5>
+                        </div>
+                        <div class="card-body">
+                            <p class="card-text">
+                                <strong>Обученная модель</strong> для обнаружения повреждений
+                            </p>
+                            <ul class="list-unstyled">
+                                <li><i class="fas fa-check text-success"></i> Быстрое обнаружение объектов</li>
+                                <li><i class="fas fa-check text-success"></i> Координаты повреждений (bbox)</li>
+                                <li><i class="fas fa-check text-success"></i> Уровень уверенности</li>
+                                <li><i class="fas fa-check text-success"></i> 17 типов повреждений</li>
+                                <li><i class="fas fa-check text-success"></i> Специализация на автомобилях</li>
+                            </ul>
+                            <div class="mt-3">
+                                <span class="badge bg-warning text-dark">Проверяется</span>
+                                <span class="badge bg-secondary">Быстрая обработка</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Как это работает -->
+    <div class="row mt-5">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-cogs"></i> Как это работает</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3 text-center mb-3">
+                            <div class="bg-primary text-white rounded-circle d-inline-flex align-items-center justify-content-center" style="width: 60px; height: 60px;">
+                                <i class="fas fa-upload fa-lg"></i>
+                            </div>
+                            <h6 class="mt-2">1. Загрузка</h6>
+                            <p class="small text-muted">Загрузите фото автомобиля</p>
+                        </div>
+                        <div class="col-md-3 text-center mb-3">
+                            <div class="bg-info text-white rounded-circle d-inline-flex align-items-center justify-content-center" style="width: 60px; height: 60px;">
+                                <i class="fas fa-brain fa-lg"></i>
+                            </div>
+                            <h6 class="mt-2">2. Gemini</h6>
+                            <p class="small text-muted">Детальный анализ AI</p>
+                        </div>
+                        <div class="col-md-3 text-center mb-3">
+                            <div class="bg-warning text-dark rounded-circle d-inline-flex align-items-center justify-content-center" style="width: 60px; height: 60px;">
+                                <i class="fas fa-eye fa-lg"></i>
+                            </div>
+                            <h6 class="mt-2">3. YOLO</h6>
+                            <p class="small text-muted">Обнаружение повреждений</p>
+                        </div>
+                        <div class="col-md-3 text-center mb-3">
+                            <div class="bg-success text-white rounded-circle d-inline-flex align-items-center justify-content-center" style="width: 60px; height: 60px;">
+                                <i class="fas fa-chart-line fa-lg"></i>
+                            </div>
+                            <h6 class="mt-2">4. Результат</h6>
+                            <p class="small text-muted">Сравнение и выводы</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const imageInput = document.getElementById('image');
+    const previewCard = document.getElementById('previewCard');
+    const previewImage = document.getElementById('previewImage');
+    const analyzeBtn = document.getElementById('analyzeBtn');
+    const uploadForm = document.getElementById('uploadForm');
+
+    // Предварительный просмотр изображения
+    imageInput.addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                previewImage.src = e.target.result;
+                previewCard.style.display = 'block';
+            };
+            reader.readAsDataURL(file);
+        } else {
+            previewCard.style.display = 'none';
+        }
+    });
+
+    // Обработка отправки формы
+    uploadForm.addEventListener('submit', function(e) {
+        analyzeBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Анализируем...';
+        analyzeBtn.disabled = true;
+    });
+});
+</script>
+{% endblock %}

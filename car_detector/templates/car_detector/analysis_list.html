@@ -1,0 +1,114 @@
+{% extends 'car_detector/base.html' %}
+{% load translation_filters %}
+
+{% block title %}Все анализы{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row mb-4">
+        <div class="col-12">
+            <h1><i class="fas fa-list"></i> Все анализы</h1>
+            <p class="text-muted">История всех проведенных анализов автомобилей</p>
+        </div>
+    </div>
+
+    {% if analyses %}
+    <div class="row">
+        {% for analysis in analyses %}
+        <div class="col-lg-4 col-md-6 mb-4">
+            <div class="card card-hover h-100">
+                <img src="{{ analysis.image.url }}" class="card-img-top" style="height: 200px; object-fit: cover;">
+                <div class="card-body">
+                    <h6 class="card-title">
+                        Анализ #{{ analysis.id }}
+                    </h6>
+                    
+                    <!-- Статусы -->
+                    <div class="mb-2">
+                        <span class="badge status-badge 
+                            {% if analysis.gemini_integrity_label == 'damaged' %}bg-danger
+                            {% else %}bg-success{% endif %}">
+                            {{ analysis.gemini_integrity_label|translate_integrity_filter }}
+                        </span>
+                        <span class="badge status-badge 
+                            {% if analysis.gemini_cleanliness_label == 'clean' %}bg-success
+                            {% elif analysis.gemini_cleanliness_label == 'slightly_dirty' %}bg-warning
+                            {% else %}bg-danger{% endif %}">
+                            {{ analysis.gemini_cleanliness_label|translate_cleanliness_filter }}
+                        </span>
+                    </div>
+
+                    <!-- Статистика -->
+                    <div class="mb-2">
+                        <small class="text-muted">
+                            <i class="fas fa-hammer"></i> Повреждений: {{ analysis.gemini_damage_count }}<br>
+                            <i class="fas fa-eye"></i> YOLO: {{ analysis.yolo_detection_count }}<br>
+                            {% if analysis.processing_time %}
+                            <i class="fas fa-stopwatch"></i> {{ analysis.processing_time|floatformat:1 }}с
+                            {% endif %}
+                        </small>
+                    </div>
+
+                    <!-- Уверенность -->
+                    <div class="mb-2">
+                        <small>Уверенность:</small>
+                        <div class="progress" style="height: 6px;">
+                            <div class="progress-bar bg-primary" 
+                                 style="width: {{ analysis.gemini_integrity_confidence|mul:100|floatformat:0 }}%">
+                            </div>
+                        </div>
+                        <small class="text-muted">{{ analysis.gemini_integrity_confidence|mul:100|floatformat:1 }}%</small>
+                    </div>
+
+                    <!-- Дата -->
+                    <p class="card-text">
+                        <small class="text-muted">
+                            <i class="fas fa-clock"></i> {{ analysis.created_at|date:"d.m.Y H:i" }}
+                        </small>
+                    </p>
+
+                    <a href="{% url 'analysis_detail' analysis.id %}" class="btn btn-outline-primary btn-sm">
+                        <i class="fas fa-eye"></i> Подробнее
+                    </a>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Пагинация (если нужно) -->
+    {% if analyses.has_other_pages %}
+    <nav aria-label="Page navigation">
+        <ul class="pagination justify-content-center">
+            {% if analyses.has_previous %}
+            <li class="page-item">
+                <a class="page-link" href="?page={{ analyses.previous_page_number }}">Предыдущая</a>
+            </li>
+            {% endif %}
+            
+            <li class="page-item active">
+                <span class="page-link">{{ analyses.number }} из {{ analyses.paginator.num_pages }}</span>
+            </li>
+            
+            {% if analyses.has_next %}
+            <li class="page-item">
+                <a class="page-link" href="?page={{ analyses.next_page_number }}">Следующая</a>
+            </li>
+            {% endif %}
+        </ul>
+    </nav>
+    {% endif %}
+
+    {% else %}
+    <!-- Пустое состояние -->
+    <div class="text-center py-5">
+        <i class="fas fa-images fa-5x text-muted mb-4"></i>
+        <h3>Анализы не найдены</h3>
+        <p class="text-muted">Пока не было проведено ни одного анализа автомобилей.</p>
+        <a href="{% url 'home' %}" class="btn btn-primary">
+            <i class="fas fa-plus"></i> Провести первый анализ
+        </a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

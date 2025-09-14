@@ -1,0 +1,308 @@
+{% extends 'car_detector/base.html' %}
+{% load static %}
+{% load translation_filters %}
+
+{% block title %}Анализ #{{ analysis.id }} - Детали{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <!-- Заголовок -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{% url 'home' %}">Главная</a></li>
+                    <li class="breadcrumb-item"><a href="{% url 'analysis_list' %}">Анализы</a></li>
+                    <li class="breadcrumb-item active">Анализ #{{ analysis.id }}</li>
+                </ol>
+            </nav>
+            <h1>Анализ автомобиля #{{ analysis.id }}</h1>
+            <p class="text-muted">
+                <i class="fas fa-clock"></i> {{ analysis.created_at|date:"d.m.Y H:i:s" }}
+                {% if analysis.processing_time %}
+                | <i class="fas fa-stopwatch"></i> {{ analysis.processing_time|floatformat:2 }}с
+                {% endif %}
+            </p>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Изображения -->
+        <div class="col-lg-6 mb-4">
+            <!-- Исходное изображение -->
+            <div class="card mb-3">
+                <div class="card-header">
+                    <h5><i class="fas fa-image"></i> Исходное изображение</h5>
+                </div>
+                <div class="card-body p-0">
+                    <img src="{{ analysis.image.url }}" class="img-fluid" alt="Анализируемое изображение">
+                </div>
+            </div>
+            
+            <!-- Обработанное изображение -->
+            {% if analysis.processed_image %}
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-search-plus"></i> Анализ повреждений</h5>
+                    <small class="text-muted">Красный пунктир - Gemini, Зеленая линия - YOLO</small>
+                    <br><small class="text-info">Текст на изображении на английском для совместимости</small>
+                </div>
+                <div class="card-body p-0">
+                    <img src="{{ analysis.processed_image.url }}" class="img-fluid" alt="Обработанное изображение с повреждениями">
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Результаты анализа -->
+        <div class="col-lg-6">
+            <!-- Gemini результаты -->
+            <div class="card mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h5><i class="fas fa-brain"></i> Gemini AI Анализ</h5>
+                </div>
+                <div class="card-body">
+                    <!-- Целостность -->
+                    <div class="mb-3">
+                        <h6>Целостность автомобиля</h6>
+                        <div class="d-flex align-items-center">
+                            <span class="badge status-badge 
+                                {% if analysis.gemini_integrity_label == 'damaged' %}bg-danger
+                                {% else %}bg-success{% endif %} me-3">
+                                {{ analysis.gemini_integrity_label|translate_integrity_filter }}
+                            </span>
+                            <div class="flex-grow-1">
+                                <div class="progress">
+                                    <div class="progress-bar 
+                                        {% if analysis.gemini_integrity_label == 'damaged' %}bg-danger
+                                        {% else %}bg-success{% endif %}" 
+                                        style="width: {{ analysis.gemini_integrity_confidence|mul:100|floatformat:0 }}%">
+                                    </div>
+                                </div>
+                                <small class="text-muted">{{ analysis.gemini_integrity_confidence|mul:100|floatformat:1 }}% уверенности</small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Чистота -->
+                    <div class="mb-3">
+                        <h6>Чистота автомобиля</h6>
+                        <div class="d-flex align-items-center">
+                            <span class="badge status-badge 
+                                {% if analysis.gemini_cleanliness_label == 'clean' %}bg-success
+                                {% elif analysis.gemini_cleanliness_label == 'slightly_dirty' %}bg-warning
+                                {% else %}bg-danger{% endif %} me-3">
+                                {{ analysis.gemini_cleanliness_label|translate_cleanliness_filter }}
+                            </span>
+                            <div class="flex-grow-1">
+                                <div class="progress">
+                                    <div class="progress-bar 
+                                        {% if analysis.gemini_cleanliness_label == 'clean' %}bg-success
+                                        {% elif analysis.gemini_cleanliness_label == 'slightly_dirty' %}bg-warning
+                                        {% else %}bg-danger{% endif %}" 
+                                        style="width: {{ analysis.gemini_cleanliness_confidence|mul:100|floatformat:0 }}%">
+                                    </div>
+                                </div>
+                                <small class="text-muted">{{ analysis.gemini_cleanliness_confidence|mul:100|floatformat:1 }}% уверенности</small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Детали повреждений -->
+                    {% if gemini_damage_parts %}
+                    <div class="mb-3">
+                        <h6>Детали повреждений ({{ gemini_damage_parts|length }})</h6>
+                        {% for part in gemini_damage_parts %}
+                        <div class="damage-item">
+                            <strong>{{ part.part|translate_car_part_filter }}</strong> - 
+                            <span class="badge bg-secondary">{{ part.type|translate_damage_type_filter }}</span>
+                            <div class="progress mt-1" style="height: 4px;">
+                                <div class="progress-bar bg-warning" 
+                                     style="width: {{ part.confidence|mul:100|floatformat:0 }}%">
+                                </div>
+                            </div>
+                            <small class="text-muted">{{ part.confidence|mul:100|floatformat:1 }}% уверенности</small>
+                            {% if part.other_desc %}
+                            <br><small class="text-info">{{ part.other_desc }}</small>
+                            {% endif %}
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+
+                    <!-- Условия съемки -->
+                    {% if environment %}
+                    <div class="environment-info">
+                        <h6><i class="fas fa-cloud-sun"></i> Условия съемки</h6>
+                        <div class="row">
+                            <div class="col-6">
+                                <small><strong>Погода:</strong> {{ environment.weather|translate_weather_filter }}</small><br>
+                                <small><strong>Освещение:</strong> {{ environment.lighting|translate_lighting_filter }}</small>
+                            </div>
+                            <div class="col-6">
+                                <small><strong>Блики:</strong> {{ environment.glare_coverage_pct|mul:100|floatformat:0 }}%</small><br>
+                                <small><strong>Влажность:</strong> {{ environment.wetness_pct|mul:100|floatformat:0 }}%</small>
+                            </div>
+                        </div>
+                        {% if environment.wet_surface %}
+                        <div class="mt-2">
+                            <span class="badge bg-info">Влажная поверхность</span>
+                        </div>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+
+                    {% if analysis.gemini_uncertain %}
+                    <div class="alert alert-warning mt-3">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <strong>Неопределенность:</strong> {{ analysis.gemini_notes }}
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- YOLO результаты -->
+            <div class="card">
+                <div class="card-header bg-warning text-dark">
+                    <h5><i class="fas fa-eye"></i> YOLO Detection</h5>
+                </div>
+                <div class="card-body">
+                    {% if yolo_detections %}
+                        <p><strong>Обнаружено повреждений:</strong> {{ yolo_detections|length }}</p>
+                        {% if analysis.yolo_confidence %}
+                        <p><strong>Средняя уверенность:</strong> {{ analysis.yolo_confidence|mul:100|floatformat:1 }}%</p>
+                        {% endif %}
+                        
+                        {% for detection in yolo_detections %}
+                        <div class="border rounded p-2 mb-2">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <strong>{{ detection.class|title }}</strong>
+                                    <span class="badge bg-primary ms-2">{{ detection.confidence|mul:100|floatformat:1 }}%</span>
+                                </div>
+                                <small class="text-muted">Площадь: {{ detection.area|floatformat:0 }}px²</small>
+                            </div>
+                            {% if detection.bbox %}
+                            <div class="mt-1">
+                                <small class="text-muted">
+                                    Координаты: [{{ detection.bbox.0|floatformat:2 }}, {{ detection.bbox.1|floatformat:2 }}, 
+                                    {{ detection.bbox.2|floatformat:2 }}, {{ detection.bbox.3|floatformat:2 }}]
+                                </small>
+                            </div>
+                            {% endif %}
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="text-center text-muted">
+                            <i class="fas fa-search fa-2x mb-2"></i>
+                            <p>Повреждения не обнаружены</p>
+                            {% if analysis.yolo_confidence == 0 %}
+                            <small>YOLO модель недоступна</small>
+                            {% endif %}
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Сравнение результатов -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-balance-scale"></i> Сравнение результатов</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6><i class="fas fa-brain text-primary"></i> Gemini AI</h6>
+                            <ul class="list-unstyled">
+                                <li><strong>Целостность:</strong> 
+                                    <span class="badge {% if analysis.gemini_integrity_label == 'damaged' %}bg-danger{% else %}bg-success{% endif %}">
+                                        {{ analysis.get_gemini_integrity_label_display }}
+                                    </span>
+                                    ({{ analysis.gemini_integrity_confidence|floatformat:1 }}%)
+                                </li>
+                                <li><strong>Чистота:</strong> 
+                                    <span class="badge {% if analysis.gemini_cleanliness_label == 'clean' %}bg-success{% elif analysis.gemini_cleanliness_label == 'slightly_dirty' %}bg-warning{% else %}bg-danger{% endif %}">
+                                        {{ analysis.get_gemini_cleanliness_label_display }}
+                                    </span>
+                                    ({{ analysis.gemini_cleanliness_confidence|floatformat:1 }}%)
+                                </li>
+                                <li><strong>Повреждений:</strong> {{ analysis.gemini_damage_count }}</li>
+                                <li><strong>Условия:</strong> 
+                                    {% if environment %}
+                                        {{ environment.weather|title }}, {{ environment.lighting|title }}
+                                    {% else %}
+                                        Не определены
+                                    {% endif %}
+                                </li>
+                            </ul>
+                        </div>
+                        <div class="col-md-6">
+                            <h6><i class="fas fa-eye text-warning"></i> YOLO Detection</h6>
+                            <ul class="list-unstyled">
+                                <li><strong>Обнаружено:</strong> {{ analysis.yolo_detection_count }} повреждений</li>
+                                <li><strong>Уверенность:</strong> 
+                                    {% if analysis.yolo_confidence %}
+                                        {{ analysis.yolo_confidence|floatformat:1 }}%
+                                    {% else %}
+                                        Не определена
+                                    {% endif %}
+                                </li>
+                                <li><strong>Типы:</strong> 
+                                    {% if yolo_detections %}
+                                        {% for detection in yolo_detections %}
+                                            <span class="badge bg-secondary">{{ detection.class|title }}</span>
+                                        {% endfor %}
+                                    {% else %}
+                                        Не обнаружены
+                                    {% endif %}
+                                </li>
+                                <li><strong>Статус:</strong> 
+                                    {% if analysis.yolo_confidence > 0 %}
+                                        <span class="badge bg-success">Работает</span>
+                                    {% else %}
+                                        <span class="badge bg-secondary">Недоступна</span>
+                                    {% endif %}
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                    
+                    <!-- Сводка -->
+                    <div class="mt-3 p-3 bg-light rounded">
+                        <h6><i class="fas fa-chart-line"></i> Сводка</h6>
+                        <p class="mb-0">
+                            {% if analysis.gemini_integrity_label == 'damaged' and analysis.yolo_detection_count > 0 %}
+                                <span class="text-danger"><i class="fas fa-exclamation-triangle"></i> Обе модели подтверждают наличие повреждений</span>
+                            {% elif analysis.gemini_integrity_label == 'damaged' and analysis.yolo_detection_count == 0 %}
+                                <span class="text-warning"><i class="fas fa-question-circle"></i> Gemini обнаружил повреждения, YOLO - нет</span>
+                            {% elif analysis.gemini_integrity_label == 'undamaged' and analysis.yolo_detection_count > 0 %}
+                                <span class="text-warning"><i class="fas fa-question-circle"></i> YOLO обнаружил повреждения, Gemini - нет</span>
+                            {% else %}
+                                <span class="text-success"><i class="fas fa-check-circle"></i> Обе модели не обнаружили повреждений</span>
+                            {% endif %}
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Действия -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="d-flex gap-2">
+                <a href="{% url 'dual_analysis' %}" class="btn btn-primary">
+                    <i class="fas fa-plus"></i> Новый анализ
+                </a>
+                <a href="{% url 'analysis_list' %}" class="btn btn-outline-secondary">
+                    <i class="fas fa-list"></i> Все анализы
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
