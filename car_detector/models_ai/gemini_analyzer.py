@@ -17,7 +17,7 @@ class GeminiAnalyzer:
     """Gemini анализатор для детального анализа автомобилей"""
     
     def __init__(self, api_key: str = None):
-        self.api_key = api_key or "AIzaSyBcHZOH8nT045oOgdefL3iNOyJc0n0jgfQ"
+        self.api_key = api_key or "AIzaSyBbxAgK-zL_RrMvZkpcsrEAwv5skPabDPs"
         self.model_name = "gemini-1.5-flash"
         self.available = False
         

@@ -224,8 +224,18 @@ def api_gemini_analyze(request):
                 os.unlink(temp_path)
         
     except Exception as e:
+        error_text = f"""🚗 АНАЛИЗ АВТОМОБИЛЯ
+
+❌ ОШИБКА ОБРАБОТКИ:
+• {str(e)}
+
+⚠️ Проверьте формат изображения и попробуйте снова."""
+        
         return JsonResponse({
             'status': 'error',
+            'model': 'gemini',
+            'processing_time': 0.0,
+            'analysis_text': error_text,
             'error': str(e)
         }, status=500)
 
@@ -260,6 +270,25 @@ def api_simple_status(request):
             gemini_results = car_analysis_service.gemini_analyzer.analyze(temp_path)
             processing_time = time.time() - start_time
             
+            # Проверяем, есть ли ошибка в результатах Gemini
+            if 'error' in gemini_results:
+                error_text = f"""🚗 АНАЛИЗ АВТОМОБИЛЯ
+
+❌ ОШИБКА АНАЛИЗА:
+• {gemini_results['error']}
+
+⚠️ Сервис временно недоступен. Попробуйте позже.
+
+⏱️ Время обработки: {round(processing_time, 2)}с"""
+                
+                return JsonResponse({
+                    'status': 'error',
+                    'model': 'gemini',
+                    'processing_time': round(processing_time, 2),
+                    'analysis_text': error_text,
+                    'error': gemini_results['error']
+                })
+            
             # Формируем детальный ответ как на веб-странице
             integrity = gemini_results.get('integrity', {})
             cleanliness = gemini_results.get('cleanliness', {})
@@ -283,8 +312,10 @@ def api_simple_status(request):
                 cleanliness_text = "чистый"
             elif cleanliness_level == 'slightly_dirty':
                 cleanliness_text = "слегка грязный"
-            else:
+            elif cleanliness_level == 'dirty':
                 cleanliness_text = "грязный"
+            else:
+                cleanliness_text = "неизвестно"
             
             # Формируем текстовый ответ как на веб-странице
             text_response = f"""🚗 АНАЛИЗ АВТОМОБИЛЯ
@@ -423,8 +454,20 @@ def api_simple_status(request):
             return JsonResponse(response_data)
             
         except Exception as e:
+            error_text = f"""🚗 АНАЛИЗ АВТОМОБИЛЯ
+
+❌ ОШИБКА АНАЛИЗА:
+• {str(e)}
+
+⚠️ Сервис временно недоступен. Попробуйте позже.
+
+⏱️ Время обработки: {round(time.time() - start_time, 2)}с"""
+            
             return JsonResponse({
                 'status': 'error',
+                'model': 'gemini',
+                'processing_time': round(time.time() - start_time, 2),
+                'analysis_text': error_text,
                 'error': f'Analysis failed: {str(e)}'
             }, status=500)
         
@@ -434,7 +477,17 @@ def api_simple_status(request):
                 os.unlink(temp_path)
         
     except Exception as e:
+        error_text = f"""🚗 АНАЛИЗ АВТОМОБИЛЯ
+
+❌ ОШИБКА ОБРАБОТКИ:
+• {str(e)}
+
+⚠️ Проверьте формат изображения и попробуйте снова."""
+        
         return JsonResponse({
             'status': 'error',
+            'model': 'gemini',
+            'processing_time': 0.0,
+            'analysis_text': error_text,
             'error': str(e)
         }, status=500)
